@@ -1,0 +1,14 @@
+# Dependency directories
+node_modules/
+
+# Sessions
+tokens/
+
+# Vscode config
+.vscode/
+
+# environment variables
+.env
+
+# readme
+readme.md
