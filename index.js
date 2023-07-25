@@ -5,11 +5,22 @@ const express = require('express');
 const app = express();
 const server = http.createServer(app);
 const { body, validationResult } = require("express-validator");
-const { messageSender, messagesFinder, messageFinder, messageFetcher } = require('./core/core.js');
+// const { Pool } = require('pg');
+
 
 const port = 3000;
 
+// const pool = new Pool({
+//     user: 'postgres',
+//     host: 'containers-us-west-32.railway.app',
+//     database: 'railway',
+//     password: 'JndvZdVXUtYE5Lfdw2sa',
+//     port: 7887, // Replace with your PostgreSQL port if different
+// });
+
 const logger = require('./util/logger.js');
+const { messageSender, messagesFinder, messageFinder, messagesFetcher } = require('./core/core.js');
+const { saveMessage } = require('./util/messageUtil.js');
 
 let activeSessions = {}; // Menyimpan informasi sesi aktif
 
@@ -34,8 +45,8 @@ const initApp = async (clientId)  => {
     }
 }
 
-const start = (client) => {
-    client.onMessage(async (message) => {
+const start = ( client ) => {
+    client.onMessage(async ( message ) => {
         const { from, type, body, to } = message;
         if (body.toLowerCase() === 'hai') {
             try {
@@ -44,6 +55,16 @@ const start = (client) => {
             } catch (err) {
                 logger.error(`Error when sending: ${err}`);
             }
+        }
+    })
+    client.onAnyMessage(async ( message ) => {
+        if (!message) {
+            logger.error(`Message is empty, skip saving...`)
+        }
+        const uploadedMessage = await saveMessage(message)
+        if(uploadedMessage){
+          console.log(uploadedMessage.chatMessageBody)
+          logger.info(`Message successfully saved to database.`)
         }
     })
 }

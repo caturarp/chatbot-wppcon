@@ -47,4 +47,4 @@ const messageFetcher = async (client, chatId, limit) => {
     console.log(messages)
     return messages
 }  
-module.exports = {messageSender, messageFinder, messagesFinder, messageFetcher}
+module.exports = {messageSender, messageFinder, messageFetcher, messagesFetcher}
