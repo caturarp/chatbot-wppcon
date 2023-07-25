@@ -1,5 +1,5 @@
 // messageUtils.js
-const pool = require(''); // Import the pool from the appropriate file
+// const pool = require(''); // Import the pool from the appropriate file
 const logger = require('./logger.js'); // Import the logger from the appropriate file
 
 const saveMessage = async (message) => {
@@ -7,6 +7,7 @@ const saveMessage = async (message) => {
     const messageId = message.id;
     const sender = message.sender;
     const fromMe = sender.isMe;
+    const isGroupMsg = message.isGroupMsg;
     // const numberSender = message.id.remote.split('@')[0];
     // const numberReceiver = clientId;
     const numberSender = message.from;
@@ -20,14 +21,14 @@ const saveMessage = async (message) => {
     // const hasQuotedMsg = message.hasQuotedMsg;
     // const mentionedIds = message.mentionedIds; 
 
-    console.log(messageId, body)
+    logger.info(messageId, body)
     try {
       let conversation = body
       if (conversation == null || type == undefined){
         logger.info(`Message is not a text message, skip saving...`)
         return
       }
-      if (group == undefined){
+      if (isGroupMsg == true){
         conversation = `${numberSender} (group): ${body}`
         logger.info(`Message is from group, skip saving...`, conversation)
         return

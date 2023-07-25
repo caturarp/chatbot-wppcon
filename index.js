@@ -103,24 +103,18 @@ app.get("/whatscheck", async (req, res) =>{
         return res.status(404).json({ error: 'Client not found' });
     }
     try { 
-        let contact = await client.getNumberStatus(`${number}@c.us`)
-        if (!contact){
+        let contact = await client.checkNumberStatus(`${number}@c.us`)
+        if (contact.numberExists == false){
           return res.status(404).json({ error: 'contact not found' });
         }
-        console.log(contact)
-        let isContact = contact.isWAContact
-        console.log(isContact)
-        // logger.info(contact, isContact)
-        // if (!isContact){
-        //   return res.status(404).json({ error: `number not found, ${isContact}` });
-        // }
+        // console.log(contact)
         res.writeHead(200, {
             "Content-Type": "application/json",
         });
         res.end(
             JSON.stringify({
             status: true,
-            message: "success",
+            message: "contact is exist",
             })
         );
     } catch (error) {
@@ -193,22 +187,19 @@ app.post("/send",
     }
 );  
 
-app.get("/unsend", async (req, res) => {
-    let device = req.query.device
-    let number = req.query.number
-    let chatId = req.query.chatId
-    let messageId = req.query.messageId // []string || string
+// unsend single or multiple messages
+app.post("/unsend", async (req, res) => {
+    const { device, number, chatId, messageId } = req.body;
 
     const client = activeSessions[device];
 
     if (!client) {
         return res.status(404).json({ error: 'Client not found' });
-      }
-    if (!device) return res.send('Input Parameter Device');
-    if (!number) return res.send('Input Parameter Number Parameter');
-    if (!/^\d+$/.test(number)) return res.send('Invalid Number');
-    if (!chatId) return res.send('Input Parameter chatId Parameter');
-    if (!messageId) return res.send('Input Parameter messageId Parameter');
+    }
+
+    if (!device || !number || !chatId || !messageId) {
+        return res.status(400).json({ error: 'Missing parameters in the request body.' });
+    }
 
     try {
         if (Array.isArray(messageId)) {
@@ -230,15 +221,15 @@ app.get("/unsend", async (req, res) => {
 app.get("/getchat", async (req, res) => {
     let device = req.query.device
     let number = req.query.number
-    let chatId = req.query.chatId
     let limit = parseInt(req.query.limit) // Convert the 'limit' parameter to an integer
+    
+    let chatId = `${number}@c.us`
   
     const client = activeSessions[device];
   
     if (!device) return res.send('Input Parameter Device');
     if (!number) return res.send('Input Parameter Number Parameter');
     if (!/^\d+$/.test(number)) return res.send('Invalid Number');
-    if (!chatId) return res.send('Input Parameter chatId Parameter');
   
     if (!client) {
       return res.status(404).json({ error: 'Client not found' });
