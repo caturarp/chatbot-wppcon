@@ -42,6 +42,21 @@ const initApp = async (clientId)  => {
         });
         activeSessions[clientId] = client;
         start(client);
+        // io.on('connection', (socket) => {
+        //     console.log(`New client connected with session ${clientId}`);
+
+        //     // Listen for the 'logout' event from this client and perform the logout operation
+        //     socket.on('logout', () => {
+        //         client.logout()
+        //         .then(() => {
+        //             // Perform any other cleanup or logging if needed
+        //             console.log('Client logged out successfully.');
+        //         })
+        //         .catch((err) => {
+        //             console.error('Error occurred during logout:', err);
+        //         });
+        //     });
+        //   });
     } catch (err) {
         logger.error(err);
     }

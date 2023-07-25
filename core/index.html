@@ -69,8 +69,8 @@
         });
     
         function logout(device){
-            socket.emit('LogoutDevice',device);
-            socket.emit('StartConnection',lastSegment);
+            socket.emit('logout',device);
+            // socket.emit('StartConnection',lastSegment);
             $("#ref").html('');
             $('#disconnect-wrapper').hide();
             $('#qrcode').attr('src', '');

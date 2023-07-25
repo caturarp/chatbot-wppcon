@@ -10,7 +10,7 @@ const saveMessage = async (message) => {
     const isGroupMsg = message.isGroupMsg;
     // const numberSender = message.id.remote.split('@')[0];
     // const numberReceiver = clientId;
-    const numberSender = message.from;
+    const numberSender = sender.id.user.split('@')[0];
     const numberReceiver = message.to;
     const body = message.body;
     const type = message.type;
