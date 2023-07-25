@@ -135,7 +135,7 @@ app.get("/unsend", async (req, res) => {
     let device = req.query.device
     let number = req.query.number
     let chatId = req.query.chatId
-    let messageId = req.query.messageId
+    let messageId = req.query.messageId // []string || string
 
     const client = activeSessions[device];
 
@@ -150,15 +150,13 @@ app.get("/unsend", async (req, res) => {
 
     try {
         if (Array.isArray(messageId)) {
-            const messages = await messagesFinder(client, chatId, messageId);
-            if (messages.length === 0) return res.send('Messages not found');
-        
-            await client.deleteMessage(chatId, messages);
+            if (messageId.length === 0) return res.send('Messages not found');
+
+            await client.deleteMessage(chatId, messageId);
         } else {
-            const message = await messageFinder(client, chatId, messageId);
-            if (!message) return res.send('Message not found');
+            if (!messageId) return res.send('Message not found');
         
-            await client.deleteMessage(chatId, message);
+            await client.deleteMessage(chatId, messageId);
         }
     
         return res.send('Message(s) deleted');
