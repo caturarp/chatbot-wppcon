@@ -18,6 +18,8 @@ const port = 3000;
 //     port: 7887, // Replace with your PostgreSQL port if different
 // });
 
+const socketIO= require('socket.io')(server);
+const io = socketIO
 const logger = require('./util/logger.js');
 const { messageSender, messagesFinder, messageFinder, messagesFetcher } = require('./core/core.js');
 const { saveMessage } = require('./util/messageUtil.js');
@@ -27,11 +29,11 @@ let activeSessions = {}; // Menyimpan informasi sesi aktif
 
 const initApp = async (clientId)  => {
     try {
-        // rewrite the start function to async/await
         const client =  await wppconnect.create({
             session: clientId,
-            catchQR: (asciiQR) => {
-                console.log('asciiQR:', asciiQR);
+            catchQR: (urlCode) => {
+                // console.log('urlCode:', urlCode );
+                io.emit('qr', urlCode);
             },
             statusFind: (statusSession, session) => {
                 logger.info(`Session ${session} status : ${statusSession}`);
@@ -75,15 +77,23 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/core/home.html");
-  });
-
+});
+  
+app.get("/device", (req, res) => {
+    res.sendFile(__dirname + "/core/device.html");
+});
+  
+app.post("/device", (req, res) => {
+    const no = req.body.device;
+    res.redirect("/scan/" + no);
+});
 
 app.get("/scan/:id", async (req, res) => {
     const clientId = req.params.id;
     try {
       initApp(clientId);
       // res.send(currentQR).Status(200)
-    //   res.sendFile(__dirname + "/core//index.html");
+      res.sendFile(__dirname + "/core//index.html");
     } catch (error) {
       if (error instanceof AuthenticationError) {
         logger.info(`client ${clientId} authentication failure: ${error.message}`);
@@ -93,7 +103,7 @@ app.get("/scan/:id", async (req, res) => {
         res.sendStatus(500); // Send 500 Internal Server Error status code or handle it differently
       }
     }
-  });
+});
 
 app.get("/whatscheck", async (req, res) =>{
     let device = req.query.device
