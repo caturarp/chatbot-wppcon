@@ -23,8 +23,8 @@ const messageFinder = async (client, chatId, messageId) => {
     return message
 }
 
-const messagesFinder = async (client, chatId) => {
-    const messages = client.getMessages(chatId)
+const messagesFetcher = async (client, chatId, limit) => {
+    const messages = client.getMessages(chatId, getMessagesParams = { count : limit})
     if (!messages || messages === undefined) {
         throw new NotFoundError(`Messages not found`);
     }

@@ -74,6 +74,47 @@ app.get("/scan/:id", async (req, res) => {
     }
   });
 
+app.get("/whatscheck", async (req, res) =>{
+    let device = req.query.device
+    let number = req.query.number
+    const client = activeSessions[device];
+    if (!client) {
+        return res.status(404).json({ error: 'Client not found' });
+    }
+    try { 
+        let contact = await client.getNumberStatus(`${number}@c.us`)
+        if (!contact){
+          return res.status(404).json({ error: 'contact not found' });
+        }
+        console.log(contact)
+        let isContact = contact.isWAContact
+        console.log(isContact)
+        // logger.info(contact, isContact)
+        // if (!isContact){
+        //   return res.status(404).json({ error: `number not found, ${isContact}` });
+        // }
+        res.writeHead(200, {
+            "Content-Type": "application/json",
+        });
+        res.end(
+            JSON.stringify({
+            status: true,
+            message: "success",
+            })
+        );
+    } catch (error) {
+        res.writeHead(401, {
+            "Content-Type": "application/json",
+        });
+        res.end(
+            JSON.stringify({
+            message: "An error occurred",
+            error: error.message,
+            })
+        );
+    }
+})
+
 app.post("/send", 
     [ 
         body("from").notEmpty(), //change from "number" to "from" matching to wwebjs property
@@ -165,44 +206,30 @@ app.get("/unsend", async (req, res) => {
     }
 })
 
-app.get("/whatscheck", async (req, res) =>{
+app.get("/getchat", async (req, res) => {
     let device = req.query.device
     let number = req.query.number
+    let chatId = req.query.chatId
+    let limit = parseInt(req.query.limit) // Convert the 'limit' parameter to an integer
+  
     const client = activeSessions[device];
+  
+    if (!device) return res.send('Input Parameter Device');
+    if (!number) return res.send('Input Parameter Number Parameter');
+    if (!/^\d+$/.test(number)) return res.send('Invalid Number');
+    if (!chatId) return res.send('Input Parameter chatId Parameter');
+  
     if (!client) {
-        return res.status(404).json({ error: 'Client not found' });
+      return res.status(404).json({ error: 'Client not found' });
     }
-    try { 
-        let contact = await client.getNumberStatus(`${number}@c.us`)
-        if (!contact){
-          return res.status(404).json({ error: 'contact not found' });
-        }
-        console.log(contact)
-        let isContact = contact.isWAContact
-        console.log(isContact)
-        // logger.info(contact, isContact)
-        // if (!isContact){
-        //   return res.status(404).json({ error: `number not found, ${isContact}` });
-        // }
-        res.writeHead(200, {
-            "Content-Type": "application/json",
-        });
-        res.end(
-            JSON.stringify({
-            status: true,
-            message: "success",
-            })
-        );
+    try {
+      const messages = await messagesFetcher(client, chatId, limit)
+      if(!messages) return res.send('Message not found')
+      
+      messageBodies = messages.map((message) => message.body)
+      return res.send(messageBodies)
     } catch (error) {
-        res.writeHead(401, {
-            "Content-Type": "application/json",
-        });
-        res.end(
-            JSON.stringify({
-            message: "An error occurred",
-            error: error.message,
-            })
-        );
+      logger.error(error)
     }
   })
   
