@@ -165,6 +165,47 @@ app.get("/unsend", async (req, res) => {
     }
 })
 
+app.get("/whatscheck", async (req, res) =>{
+    let device = req.query.device
+    let number = req.query.number
+    const client = activeSessions[device];
+    if (!client) {
+        return res.status(404).json({ error: 'Client not found' });
+    }
+    try { 
+        let contact = await client.getNumberStatus(`${number}@c.us`)
+        if (!contact){
+          return res.status(404).json({ error: 'contact not found' });
+        }
+        console.log(contact)
+        let isContact = contact.isWAContact
+        console.log(isContact)
+        // logger.info(contact, isContact)
+        // if (!isContact){
+        //   return res.status(404).json({ error: `number not found, ${isContact}` });
+        // }
+        res.writeHead(200, {
+            "Content-Type": "application/json",
+        });
+        res.end(
+            JSON.stringify({
+            status: true,
+            message: "success",
+            })
+        );
+    } catch (error) {
+        res.writeHead(401, {
+            "Content-Type": "application/json",
+        });
+        res.end(
+            JSON.stringify({
+            message: "An error occurred",
+            error: error.message,
+            })
+        );
+    }
+  })
+  
 // start the express server
 server.listen(port, () => {
     console.log(`App running on : ${port}`)
