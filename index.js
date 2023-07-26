@@ -155,62 +155,154 @@ app.get("/whatscheck", async (req, res) =>{
     }
 })
 
-app.post("/send", 
-    [ 
-        body("from").notEmpty(), //change from "number" to "from" matching to wwebjs property
-        body("message"),
-        body("to").notEmpty(),
-        body("type").notEmpty(),
-        body("urlni"),
-        body("filename")
-    ], async (req, res) => {
-        const errors = validationResult(req).formatWith(({ message }) => {
-            return message;
+app.post("/send",
+[ 
+    body("from").notEmpty(), //change from "number" to "from" matching to wwebjs property
+    body("message"),
+    body("to").notEmpty(),
+    body("type").notEmpty(),
+    body("urlni"),
+    body("filename")
+], async (req, res) => { 
+    const errors = validationResult(req).formatWith(({ message }) => {
+        return message;
+    });
+    if (!errors.isEmpty()) {
+        return res.status(422).json({
+            status: false,
+            message: errors.mapped(),
         });
-        if (!errors.isEmpty()) {
-            return res.status(422).json({
-                status: false,
-                message: errors.mapped(),
-            });
-        } else {
-            let messageDetails = req.body;
-            console.log(messageDetails)
-            try {
-                const client = activeSessions[messageDetails.from];
-                if (!client) {
-                    return res.status(404).json({ error: 'Client not found' });
-                }
-                logger.info('Client found, proceed to send message with messageSender')
-    
-                const sentMessageDetails = await messageSender(client, messageDetails)
-                
-                console.log(sentMessageDetails)
-                
-                logger.info('Message sent successfully')
-                
-                res.writeHead(200, {
-                    "Content-Type": "application/json",
-                });
-                res.end(
-                    JSON.stringify({
-                        status: true,
-                        message: "success",
-                    })
-                );
-            } catch (error) {
-                res.writeHead(401, {
-                    "Content-Type": "application/json",
-                });
-                res.end(
-                    JSON.stringify({
-                        message: "An error occurred",
-                        error: error.message,
-                    })
-                );
+    } else {
+        let messageDetails = req.body;
+        console.log(messageDetails)
+        try {
+            const client = activeSessions[messageDetails.from];
+            if (!client) {
+                return res.status(404).json({ error: 'Client not found' });
             }
+            logger.info('Client found, proceed to send message with messageSender')
+
+            const sentMessageDetails = await messageSender(client, messageDetails)
+            
+            console.log(sentMessageDetails)
+            
+            logger.info('Message sent successfully')
+            
+            res.writeHead(200, {
+                "Content-Type": "application/json",
+            });
+            res.end(
+                JSON.stringify({
+                    status: true,
+                    message: "success",
+                })
+            );
+        } catch (error) {
+            res.writeHead(401, {
+                "Content-Type": "application/json",
+            });
+            res.end(
+                JSON.stringify({
+                    message: "An error occurred",
+                    error: error.message,
+                })
+            );
         }
     }
-);  
+    }
+);
+
+app.post("/sendgroup",
+[ 
+    body("messages").isArray().notEmpty(),
+    body("messages.*.from").notEmpty(),
+    body("messages.*.message").notEmpty(),
+    body("messages.*.to").isArray().notEmpty(),
+    body("messages.*.type").notEmpty(),
+    body("messages.*.urlni"),
+    body("messages.*.filename")
+], async (req, res) => {
+    const errors = validationResult(req).formatWith(({ message }) => {
+        return message;
+    });
+    if (!errors.isEmpty()) {
+        return res.status(422).json({
+            status: false,
+            message: errors.mapped(),
+        });
+    } else {
+        let messageDetails = req.body;
+        console.log(messageDetails);
+  
+        try {
+            const result = {};
+    
+            for (const message of messageDetails.messages) {
+                const { from: session, message: msg, to: receivers, type, urlni, filename } = message;
+                const client = activeSessions[session];
+                
+                if (!client) { 
+                    return res.status(404).json({ error: 'Client not found' });
+                } else {
+                    logger.info(`Sending message from session ${session}`);
+                    for (const receiver of receivers) {
+                        try {
+                            const sentMessageDetails = await messageSender(client,{
+                                from: session,
+                                message: msg,
+                                to: receiver,
+                                type,
+                                urlni,
+                                filename,
+                            });
+                            if (!result[session]) {
+                                result[session] = {};
+                            }
+                            if (!result[session][receiver]) {
+                                result[session][receiver] = [];
+                            }
+                            result[session][receiver].push({ status: 'success', sentMessageDetails });
+                        
+                        } catch (error) {
+                            if (!result[session]) {
+                                result[session] = {};
+                            }
+                            if (!result[session][receiver]) {
+                                result[session][receiver] = [];
+                            }
+                            result[session][receiver].push({ status: 'error', error: error.message });
+                            console.error(`Error sending message from session ${session} to receiver ${receiver}: ${error.message}`);
+                        }
+                    }
+                }
+            }
+            console.log(result);
+
+            res.writeHead(200, {
+              "Content-Type": "application/json",
+            });
+            res.end(
+              JSON.stringify({
+                status: true,
+                message: "success",
+                result,
+              })
+            );
+        }
+        catch (error) {
+            res.writeHead(401, {
+                "Content-Type": "application/json",
+            });
+            res.end(
+                JSON.stringify({
+                    message: "An error occurred",
+                    error: error.message,
+                })
+            );
+        }
+    }
+})
+                
 
 // unsend single or multiple messages
 app.post("/unsend", async (req, res) => {
